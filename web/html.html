@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端菜鸡的日常</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css?time=20260331-2">
+</head>
+
+<body>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- 天气组件 -->
+    <div class="weather-widget" id="weatherWidget">
+        <div class="weather-icon" id="weatherIcon">🌤️</div>
+        <div class="weather-info">
+            <span class="weather-location" id="weatherLocation">定位中...</span>
+            <div class="weather-temp">
+                <span id="weatherTemp">--</span>
+                <span class="unit">°C</span>
+            </div>
+            <span class="weather-text" id="weatherText">加载中</span>
+        </div>
+        <button class="weather-refresh" id="weatherRefresh" title="刷新天气">🔄</button>
+    </div>
+
+
+    <!-- 登录/注册弹窗 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-box">
+            <button class="auth-close" onclick="hideAuthModal()">×</button>
+            <h2 class="auth-title" id="authTitle">登录</h2>
+            <div class="auth-error" id="authError"></div>
+            
+            <!-- 用户名（仅注册时显示） -->
+            <div class="auth-input-group" id="userNameGroup" style="display: none;">
+                <label class="auth-label">用户名</label>
+                <input type="text" class="auth-input" id="authUserName" placeholder="请输入用户名">
+            </div>
+            
+            <div class="auth-input-group">
+                <label class="auth-label">账号</label>
+                <input type="text" class="auth-input" id="authAccount" placeholder="请输入账号">
+            </div>
+            
+            <div class="auth-input-group">
+                <label class="auth-label">密码</label>
+                <input type="password" class="auth-input" id="authPassword" placeholder="请输入密码">
+            </div>
+            
+            <button class="auth-submit" id="authSubmit" onclick="handleAuth()">登录</button>
+            
+            <div class="auth-switch" id="authSwitch">
+                还没有账号？<a onclick="switchAuthMode('register')">立即注册</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访问记录面板背景 -->
+    <div class="visit-overlay" id="visitOverlay" onclick="hideVisitPanel()"></div>
+    
+    <!-- 访问记录面板 -->
+    <div class="visit-panel" id="visitPanel">
+        <div class="visit-panel-header">
+            <span class="visit-panel-title">📊 访问记录</span>
+            <button class="visit-panel-close" onclick="hideVisitPanel()">×</button>
+        </div>
+        <div class="visit-list" id="visitList">
+            <div class="loading-text">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 百度热搜组件 -->
+    <div class="hot-search-container" id="hotSearchWidget">
+        <div class="hot-search-header">
+            <span>🔥 百度热搜</span>
+            <button class="hot-search-refresh" id="hotSearchRefresh" title="刷新热搜">🔄</button>
+        </div>
+        <div class="hot-search-list" id="hotSearchList">
+            <div class="loading-text">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 汉堡菜单 -->
+    <div class="menu-toggle" id="menuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <!-- 左侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>📚 书签分类</span>
+            <!-- 用户组件 -->
+            <div class="user-widget" id="userWidget">
+                <!-- 未登录状态 -->
+                <div id="guestBtns">
+                    <button class="user-btn" onclick="showAuthModal('login')">🔐</button>
+                    <!-- <button class="user-btn primary" onclick="showAuthModal('register')">✨</button> -->
+                </div>
+                <!-- 已登录状态 -->
+                <div id="userLoggedIn" style="display: none;">
+                    <div class="user-avatar" id="userAvatar" onclick="toggleUserDropdown()">
+                        <span id="userAvatarText">U</span>
+                        <div class="user-dropdown" id="userDropdown">
+                            <div class="user-info-header">
+                                <div class="user-info-name" id="userDisplayName">用户</div>
+                                <div class="user-info-account" id="userDisplayAccount">@account</div>
+                                <span class="user-info-role" id="userRoleBadge" style="display: none;">超级管理员</span>
+                            </div>
+                            <div class="user-dropdown-item" onclick="syncDataToCloud()">
+                                <span>☁️</span> 同步数据
+                            </div>
+                            <div class="user-dropdown-item" id="visitRecordBtn" style="display: none;" onclick="showVisitPanel()">
+                                <span>📊</span> 访问记录
+                            </div>
+                            <div class="user-dropdown-divider"></div>
+                            <div class="user-dropdown-item danger" onclick="logout()">
+                                <span>🚪</span> 退出登录
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="categoryList"></div>
+        <button class="add-category-btn" onclick="addCategory()">+ 新增分类</button>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <div class="time-display">
+            <div class="time" id="time">00:00</div>
+            <div class="date" id="date">2024年1月1日 星期一</div>
+
+        </div>
+
+        <div class="search-container">
+            <div class="search-engines">
+                <button class="engine-btn" data-engine="google">
+                    🔍 Google
+                </button>
+                <button class="engine-btn active" data-engine="bing">
+                    🅱️ Bing
+                </button>
+                <button class="engine-btn" data-engine="baidu">
+                    🅱️ 百度
+                </button>
+                <button class="engine-btn" data-engine="duckduckgo">
+                    🦆 DuckDuckGo
+                </button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索任何内容...">
+                <button class="search-btn" id="searchBtn">搜索</button>
+            </div>
+            <div class="search-suggestions" id="searchSuggestions"></div>
+
+            <!-- <div class="proxy-toggle">
+                <span>使用代理搜索</span>
+                <div class="toggle-switch" id="proxyToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div> -->
+        </div>
+
+        <div class="bookmarks-container" id="bookmarksContainer">
+            <div class="bookmarks-title">
+                <span id="currentCategoryName">全部书签</span>
+            </div>
+            <div class="bookmarks-grid" id="bookmarksGrid"></div>
+        </div>
+
+        <!-- 每日一言 -->
+        <div class="daily-quote" id="dailyQuote">
+            <span class="quote-text" id="quoteText">加载中...</span>
+            <span class="quote-author" id="quoteAuthor"></span>
+            <button class="quote-refresh" id="quoteRefresh" title="换一条">🔄</button>
+        </div>
+    </div>
+
+    <!-- 自定义背景文件选择器 -->
+    <input type="file" id="customBgInput" class="hidden-file-input" accept="image/*">
+
+    <!-- 管理模式切换按钮 -->
+    <button class="manage-toggle" id="manageToggle" title="管理模式">⚙️</button>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+    <button class="network-bg-btn" id="networkBgBtn" title="网络背景">🌐</button>
+    <!-- 自定义背景按钮 -->
+    <button class="custom-bg-btn" id="customBgBtn" title="自定义背景">🖼️</button>
+    <!-- 背景切换按钮 -->
+    <button class="bg-switcher" id="bgSwitcher" title="切换背景">🎨</button>
+
+    <script src="./indexJs.js?time=20260331-2"></script>
+</body>
+
+</html>

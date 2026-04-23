@@ -558,6 +558,8 @@ const SEARCH_SUGGEST_DEBOUNCE_MS = 300;
 const MAX_SUGGESTION_COUNT = 8;
 let suggestDebounceTimer = null;
 let bingSuggestScriptEl = null;
+let currentSuggestions = [];
+let activeSuggestionIndex = -1;
 
 function extractBingSuggestions(payload) {
   const suggestions = [];
@@ -590,6 +592,21 @@ function hideSearchSuggestions() {
   if (!searchSuggestionsEl) return;
   searchSuggestionsEl.classList.remove('show');
   searchSuggestionsEl.innerHTML = '';
+  currentSuggestions = [];
+  activeSuggestionIndex = -1;
+}
+
+function updateSuggestionActiveState() {
+  if (!searchSuggestionsEl) return;
+
+  const suggestionButtons = searchSuggestionsEl.querySelectorAll('.search-suggestion-item');
+  suggestionButtons.forEach((btn, index) => {
+    btn.classList.toggle('active', index === activeSuggestionIndex);
+  });
+
+  if (activeSuggestionIndex >= 0 && currentSuggestions[activeSuggestionIndex]) {
+    searchInputEl.value = currentSuggestions[activeSuggestionIndex];
+  }
 }
 
 function renderSearchSuggestions(list) {
@@ -600,8 +617,10 @@ function renderSearchSuggestions(list) {
     return;
   }
 
+  currentSuggestions = list.slice(0, MAX_SUGGESTION_COUNT);
+  activeSuggestionIndex = -1;
   searchSuggestionsEl.innerHTML = '';
-  list.slice(0, MAX_SUGGESTION_COUNT).forEach(text => {
+  currentSuggestions.forEach((text, index) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'search-suggestion-item';
@@ -610,6 +629,10 @@ function renderSearchSuggestions(list) {
       searchInputEl.value = text;
       hideSearchSuggestions();
       performSearch();
+    });
+    btn.addEventListener('mouseenter', () => {
+      activeSuggestionIndex = index;
+      updateSuggestionActiveState();
     });
     searchSuggestionsEl.appendChild(btn);
   });
@@ -673,24 +696,58 @@ function handleSearchInputChange() {
 }
 
 // 搜索功能
-function performSearch() {
-  const query = searchInputEl.value.trim();
+function moveSuggestionSelection(step) {
+  if (!currentSuggestions.length) return;
+
+  if (activeSuggestionIndex === -1) {
+    activeSuggestionIndex = step > 0 ? 0 : currentSuggestions.length - 1;
+  } else {
+    activeSuggestionIndex = (activeSuggestionIndex + step + currentSuggestions.length) % currentSuggestions.length;
+  }
+
+  updateSuggestionActiveState();
+}
+
+function performSearch(keyword = searchInputEl.value.trim()) {
+  const query = keyword.trim();
   if (!query) return;
 
   const engine = searchEngines[currentEngine];
   const searchUrl = engine.url;
+  searchInputEl.value = query;
   hideSearchSuggestions();
   window.open(searchUrl + encodeURIComponent(query), '_blank');
 }
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
 searchInputEl.addEventListener('input', handleSearchInputChange);
-searchInputEl.addEventListener('keypress', function (e) {
-  if (e.key === 'Enter') {
-    performSearch();
-  }
-});
 searchInputEl.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    if (currentSuggestions.length) {
+      e.preventDefault();
+      moveSuggestionSelection(1);
+    }
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    if (currentSuggestions.length) {
+      e.preventDefault();
+      moveSuggestionSelection(-1);
+    }
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (activeSuggestionIndex >= 0 && currentSuggestions[activeSuggestionIndex]) {
+      performSearch(currentSuggestions[activeSuggestionIndex]);
+      return;
+    }
+    performSearch();
+    return;
+  }
+
   if (e.key === 'Escape') {
     hideSearchSuggestions();
   }
